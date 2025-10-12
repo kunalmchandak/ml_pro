@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const Dashboard = () => {
@@ -9,14 +9,25 @@ const Dashboard = () => {
   const [algorithmInfo, setAlgorithmInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle retrain state
+  useEffect(() => {
+    if (location.state) {
+      setAlgorithm(location.state.algorithm || '');
+      setSelectedDataset(location.state.dataset || '');
+    }
+  }, [location.state]);
 
   // Fetch compatible datasets when algorithm changes
   useEffect(() => {
     if (algorithm) {
       fetchCompatibleDatasets(algorithm);
     }
-    // Reset dataset selection when algorithm changes
-    setSelectedDataset('');
+    // Reset dataset selection when algorithm changes (but not if from retrain)
+    if (!location.state?.dataset) {
+      setSelectedDataset('');
+    }
   }, [algorithm]);
 
   const fetchCompatibleDatasets = async (algo) => {
@@ -63,9 +74,22 @@ const Dashboard = () => {
               <option value="logistic_regression">Logistic Regression</option>
               <option value="random_forest">Random Forest</option>
               <option value="svm">SVM</option>
+              <option value="knn">K-Nearest Neighbors</option>
+              <option value="decision_tree">Decision Tree</option>
+              <option value="linear_regression">Linear Regression</option>
+              <option value="ridge">Ridge Regression</option>
+              <option value="lasso">Lasso Regression</option>
+              <option value="decision_tree_regressor">Decision Tree Regressor</option>
+              <option value="random_forest_regressor">Random Forest Regressor</option>
+              <option value="gradient_boosting">Gradient Boosting Regressor</option>
+              <option value="xgboost">XGBoost Regressor</option>
+              <option value="lightgbm">LightGBM Regressor</option>
+              <option value="svr">Support Vector Regressor</option>
+              <option value="knn_regressor">K-Nearest Neighbors Regressor</option>
             </optgroup>
             <optgroup label="Unsupervised Learning">
               <option value="kmeans">K-Means Clustering</option>
+              <option value="dbscan">DBSCAN</option>
             </optgroup>
           </select>
           

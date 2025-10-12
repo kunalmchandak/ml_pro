@@ -1,6 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Bar } from 'react-chartjs-2';
+import axios from 'axios';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,12 +26,24 @@ const Visualization = () => {
   const navigate = useNavigate();
   const results = location.state?.results || {};
 
+  // Determine task type
+  const isClassification = 'accuracy' in results;
+  const isRegression = 'r2_score' in results;
+  const isUnsupervised = !isClassification && !isRegression;
+
+  // Get specific metrics for chart
+  const metrics = isRegression
+    ? ['mse', 'mae', 'r2_score']
+    : isClassification
+    ? ['accuracy', 'precision', 'recall', 'f1_score']
+    : ['silhouette_score', 'calinski_harabasz_score', 'davies_bouldin_score', 'inertia'].filter(key => key in results);
+
   const chartData = {
-    labels: ['Accuracy'],
+    labels: metrics.map(m => m.replace('_', ' ').replace('score', ' Score')),
     datasets: [
       {
-        label: 'Model Performance',
-        data: [results.accuracy || 0],
+        label: isRegression ? 'Regression Metrics' : isClassification ? 'Classification Metrics' : 'Unsupervised Metrics',
+        data: metrics.map(m => results[m] || 0),
         backgroundColor: 'rgba(53, 162, 235, 0.5)',
       }
     ]
@@ -47,32 +60,91 @@ const Visualization = () => {
     }
   };
 
+  const formatMetric = (key, value) => {
+    if (key === 'accuracy' || key === 'precision' || key === 'recall' || key === 'f1_score' || key === 'r2_score') {
+      return `${(value * 100).toFixed(2)}%`;
+    }
+    if (key === 'silhouette_score') {
+      return value.toFixed(3);
+    }
+    return value.toFixed(2);
+  };
+
+  const taskType = isRegression ? 'Regression' : isClassification ? 'Classification' : 'Unsupervised';
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Results</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Model Performance</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Model Performance ({taskType})
+          </h2>
           <Bar data={chartData} />
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Model Details</h2>
           <div className="space-y-2">
-            <p>Dataset: {results.dataset_name}</p>
-            <p>Algorithm: {results.algorithm}</p>
-            <p>Samples: {results.n_samples}</p>
-            <p>Features: {results.n_features}</p>
-            <p>Accuracy: {(results.accuracy * 100).toFixed(2)}%</p>
+            <p><strong>Dataset:</strong> {results.dataset_name}</p>
+            <p><strong>Algorithm:</strong> {results.algorithm}</p>
+            <p><strong>Samples:</strong> {results.n_samples}</p>
+            <p><strong>Features:</strong> {results.n_features}</p>
+            <p><strong>Status:</strong> <span className={results.status === 'good' ? 'text-green-600' : 'text-red-600'}>{results.status}</span></p>
+
+            {isClassification && (
+              <>
+                <p><strong>Accuracy:</strong> {formatMetric('accuracy', results.accuracy)}</p>
+                <p><strong>Precision:</strong> {formatMetric('precision', results.precision)}</p>
+                <p><strong>Recall:</strong> {formatMetric('recall', results.recall)}</p>
+                <p><strong>F1 Score:</strong> {formatMetric('f1_score', results.f1_score)}</p>
+              </>
+            )}
+
+            {isRegression && (
+              <>
+                <p><strong>MSE:</strong> {formatMetric('mse', results.mse)}</p>
+                <p><strong>MAE:</strong> {formatMetric('mae', results.mae)}</p>
+                <p><strong>R² Score:</strong> {formatMetric('r2_score', results.r2_score)}</p>
+              </>
+            )}
+
+            {isUnsupervised && (
+              <>
+                {results.silhouette_score !== undefined && (
+                  <p><strong>Silhouette Score:</strong> {formatMetric('silhouette_score', results.silhouette_score)}</p>
+                )}
+                {results.calinski_harabasz_score !== undefined && (
+                  <p><strong>Calinski-Harabasz Score:</strong> {formatMetric('calinski_harabasz_score', results.calinski_harabasz_score)}</p>
+                )}
+                {results.davies_bouldin_score !== undefined && (
+                  <p><strong>Davies-Bouldin Score:</strong> {formatMetric('davies_bouldin_score', results.davies_bouldin_score)}</p>
+                )}
+                {results.inertia !== undefined && (
+                  <p><strong>Inertia:</strong> {formatMetric('inertia', results.inertia)}</p>
+                )}
+              </>
+            )}
           </div>
-          
-          <button
-            onClick={handleDownload}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Download Model
-          </button>
+
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={handleDownload}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Download Model
+            </button>
+
+            {results.status === 'bad' && (
+              <button
+                onClick={() => navigate('/dashboard', { state: { algorithm: results.algorithm, dataset: results.dataset_name } })}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              >
+                Retrain Model
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
