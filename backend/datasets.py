@@ -1,6 +1,8 @@
-from sklearn.datasets import load_iris, load_breast_cancer, load_wine, load_diabetes, fetch_california_housing
+from sklearn.datasets import load_iris, load_breast_cancer, load_wine, load_diabetes, fetch_california_housing, make_regression
 from sklearn.datasets import fetch_openml
 import pandas as pd
+import requests
+from io import StringIO
 
 DEFAULT_DATASETS = {
     'iris': {
@@ -42,8 +44,12 @@ DEFAULT_DATASETS = {
         'samples': 20640
     },
     'boston_housing': {
-        'loader': lambda: load_url_csv('https://raw.githubusercontent.com/selva86/datasets/master/BostonHousing.csv', target_col='medv'),
-        'description': 'Predict house prices',
+        'loader': lambda: load_url_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data', 
+                                     target_col='MEDV', 
+                                     sep='\s+',
+                                     names=['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 
+                                           'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']),
+        'description': 'Boston Housing dataset from UCI ML repository',
         'types': ['regression'],
         'features': 13,
         'samples': 506
@@ -64,14 +70,17 @@ DEFAULT_DATASETS = {
     }
 }
 
-def load_url_csv(url, target_col, sep=None):
+def load_url_csv(url, target_col, sep=None, names=None):
     try:
-        # Add a timeout and user agent to avoid connection issues
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        # Download the data using requests
+        response = requests.get(url)
+        response.raise_for_status()
+        
+        # Read the CSV data
         if sep:
-            df = pd.read_csv(url, sep=sep, timeout=10)
+            df = pd.read_csv(StringIO(response.text), sep=sep, names=names)
         else:
-            df = pd.read_csv(url, timeout=10)
+            df = pd.read_csv(StringIO(response.text), names=names)
             
         # Handle missing values more gracefully
         df = df.dropna(subset=[target_col])
