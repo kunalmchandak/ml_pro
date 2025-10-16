@@ -52,11 +52,28 @@ const Visualization = () => {
   const handleDownload = async () => {
     try {
       const response = await axios.get(
-        `http://localhost:8000/download_model/${results.dataset_name}/${results.algorithm}`
+        `http://localhost:8000/download_model/${results.dataset_name}/${results.algorithm}`,
+        { responseType: 'blob' } // Important: set responseType to blob
       );
-      window.location.href = response.data.model_path;
+      
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${results.dataset_name}_${results.algorithm}_model.pkl`);
+      
+      // Append to html link element page
+      document.body.appendChild(link);
+      
+      // Start download
+      link.click();
+      
+      // Clean up and remove the link
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
+      alert('Error downloading model');
     }
   };
 

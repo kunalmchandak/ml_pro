@@ -12,6 +12,7 @@ from algorithms.supervised import SUPERVISED_ALGORITHMS
 from algorithms.unsupervised import UNSUPERVISED_ALGORITHMS
 from datasets import DEFAULT_DATASETS, load_dataset
 from evaluation import evaluate_supervised, evaluate_regression, evaluate_unsupervised, get_status_supervised, get_status_regression, get_status_unsupervised
+from fastapi.responses import FileResponse
 
 app = FastAPI()
 
@@ -306,4 +307,8 @@ async def download_model(dataset_name: str, algorithm: str):
     model_path = f"models/{dataset_name}_{algorithm}.pkl"
     if not os.path.exists(model_path):
         raise HTTPException(status_code=404, detail="Model not found")
-    return {"model_path": model_path}
+    return FileResponse(
+        model_path,
+        media_type="application/octet-stream",
+        filename=f"{dataset_name}_{algorithm}_model.pkl"
+    )
