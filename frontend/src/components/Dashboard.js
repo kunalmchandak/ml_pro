@@ -1,6 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import DatasetUpload from './DatasetUpload';
+
 
 const Dashboard = () => {
   const [algorithm, setAlgorithm] = useState('');
@@ -8,6 +11,11 @@ const Dashboard = () => {
   const [selectedDataset, setSelectedDataset] = useState('');
   const [algorithmInfo, setAlgorithmInfo] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [userDatasets, setUserDatasets] = useState([]); // {name, analysis, file}
+  const [selectedUserDataset, setSelectedUserDataset] = useState(null);
+  const [userTarget, setUserTarget] = useState('');
+  const [userType, setUserType] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,19 +48,67 @@ const Dashboard = () => {
     }
   };
 
+
   const handleTrain = async () => {
     setLoading(true);
+    setErrorMsg('');
     try {
-      const response = await axios.post('http://localhost:8000/train', {
+      let trainPayload = {
         algorithm,
         dataset_name: selectedDataset,
         params: {}
-      });
+      };
+      // If user dataset selected, add extra params
+      if (selectedUserDataset) {
+        trainPayload = {
+          ...trainPayload,
+          is_user_dataset: true,
+          target_column: userTarget,
+        };
+      }
+      const response = await axios.post('http://localhost:8000/train', trainPayload);
       navigate('/visualization', { state: { results: response.data } });
     } catch (error) {
       console.error('Training error:', error);
+      setErrorMsg(error?.response?.data?.detail || 'Training failed. Please check your selections and dataset.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle user dataset upload/analysis
+  const handleUserDataset = (analysis, file) => {
+    if (!file) return;
+    // Extract target and type info from analysis
+    const targetColumn = analysis.target_column || analysis.selected_target;
+    const taskType = analysis.task_type || analysis.inferred_type;
+    
+    setUserDatasets(prev => {
+      // Avoid duplicates
+      const newDataset = {
+        name: file.name,
+        analysis: {
+          ...analysis,
+          selectedTarget: targetColumn,
+          selectedType: taskType
+        },
+        file
+      };
+      
+      // Update existing dataset or add new one
+      const existingIndex = prev.findIndex(ds => ds.name === file.name);
+      if (existingIndex >= 0) {
+        const updatedDatasets = [...prev];
+        updatedDatasets[existingIndex] = newDataset;
+        return updatedDatasets;
+      }
+      return [...prev, newDataset];
+    });
+
+    // If this is the currently selected dataset, update the target and type
+    if (selectedDataset === file.name) {
+      setUserTarget(targetColumn || '');
+      setUserType(taskType || '');
     }
   };
 
@@ -70,12 +126,21 @@ const Dashboard = () => {
             className="w-full p-2 border rounded"
           >
             <option value="">Choose an algorithm</option>
-            <optgroup label="Supervised Learning">
+            <optgroup label="Supervised Learning - Classification">
               <option value="logistic_regression">Logistic Regression</option>
               <option value="random_forest">Random Forest</option>
               <option value="svm">SVM</option>
               <option value="knn">K-Nearest Neighbors</option>
               <option value="decision_tree">Decision Tree</option>
+              <option value="gaussian_nb">Gaussian Naive Bayes</option>
+              <option value="multinomial_nb">Multinomial Naive Bayes</option>
+              <option value="bernoulli_nb">Bernoulli Naive Bayes</option>
+              <option value="gradient_boosting_classifier">Gradient Boosting Classifier</option>
+              <option value="xgboost_classifier">XGBoost Classifier</option>
+              <option value="lightgbm_classifier">LightGBM Classifier</option>
+              <option value="catboost_classifier">CatBoost Classifier</option>
+            </optgroup>
+            <optgroup label="Supervised Learning - Regression">
               <option value="linear_regression">Linear Regression</option>
               <option value="ridge">Ridge Regression</option>
               <option value="lasso">Lasso Regression</option>
@@ -100,29 +165,65 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Dataset Selection - Only shown if algorithm is selected */}
-        {algorithm && (
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">2. Select Compatible Dataset</h2>
+
+        {/* Dataset Upload and Selection */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">2. Upload or Select Dataset</h2>
+          <DatasetUpload onFileUpload={() => {}} onAnalysis={handleUserDataset} />
+          <div className="mt-4">
+            <label className="block mb-2">Select a dataset:</label>
             <select
               value={selectedDataset}
-              onChange={(e) => setSelectedDataset(e.target.value)}
+              onChange={e => {
+                setSelectedDataset(e.target.value);
+                // If user dataset, set extra info
+                const userDs = userDatasets.find(ds => ds.name === e.target.value);
+                setSelectedUserDataset(userDs || null);
+                if (userDs) {
+                  setUserTarget(userDs.analysis.selectedTarget || '');
+                  setUserType(userDs.analysis.selectedType || '');
+                } else {
+                  setUserTarget('');
+                  setUserType('');
+                }
+              }}
               className="w-full p-2 border rounded"
             >
               <option value="">Select a dataset</option>
+              {/* Default datasets */}
               {Object.entries(compatibleDatasets).map(([name, info]) => (
                 <option key={name} value={name}>
                   {name} ({info.samples} samples, {info.features} features)
                 </option>
               ))}
+              {/* User datasets */}
+              {userDatasets.map(ds => (
+                <option key={ds.name} value={ds.name}>
+                  {ds.name} (user-uploaded)
+                </option>
+              ))}
             </select>
+            {/* If user dataset selected, show target/type info */}
+            {selectedUserDataset && (
+              <div className="mt-2">
+                <div><strong>Target column:</strong> {userTarget}</div>
+                <div><strong>Task type:</strong> {userType}</div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
-        <div className="flex justify-end">
+        <div className="flex flex-col items-end">
+          {errorMsg && (
+            <div className="mb-2 text-red-600 text-sm">{errorMsg}</div>
+          )}
           <button
             onClick={handleTrain}
-            disabled={!selectedDataset || loading}
+            disabled={
+              loading ||
+              !selectedDataset ||
+              (selectedUserDataset && (!userTarget || !userType))
+            }
             className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg 
                      hover:bg-blue-700 disabled:opacity-50"
           >

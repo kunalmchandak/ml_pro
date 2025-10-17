@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import joblib
 import json
 import os
@@ -13,6 +13,7 @@ from algorithms.unsupervised import UNSUPERVISED_ALGORITHMS
 from datasets import DEFAULT_DATASETS, load_dataset
 from evaluation import evaluate_supervised, evaluate_regression, evaluate_unsupervised, get_status_supervised, get_status_regression, get_status_unsupervised
 from fastapi.responses import FileResponse
+from cleaning import clean_dataset
 
 app = FastAPI()
 
@@ -64,6 +65,55 @@ ALGORITHMS = {
             'default_params': {'max_depth': None},
             'compatible_types': ['classification', 'binary'],
             'description': 'Tree-based model for classification'
+        },
+        'gaussian_nb': {
+            'name': 'Gaussian Naive Bayes',
+            'task': 'classification',
+            'default_params': {},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'Probabilistic classifier based on Bayes theorem with Gaussian distribution assumption'
+        },
+        'multinomial_nb': {
+            'name': 'Multinomial Naive Bayes',
+            'task': 'classification',
+            'default_params': {'alpha': 1.0},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'Naive Bayes for multinomial distributed data, good for text classification'
+        },
+        'bernoulli_nb': {
+            'name': 'Bernoulli Naive Bayes',
+            'task': 'classification',
+            'default_params': {'alpha': 1.0},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'Naive Bayes for binary/boolean features'
+        },
+        'gradient_boosting_classifier': {
+            'name': 'Gradient Boosting Classifier',
+            'task': 'classification',
+            'default_params': {'n_estimators': 100},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'Powerful boosting algorithm for classification tasks'
+        },
+        'xgboost_classifier': {
+            'name': 'XGBoost Classifier',
+            'task': 'classification',
+            'default_params': {'n_estimators': 100},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'High-performance implementation of gradient boosting'
+        },
+        'lightgbm_classifier': {
+            'name': 'LightGBM Classifier',
+            'task': 'classification',
+            'default_params': {'n_estimators': 100},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'Light and fast implementation of gradient boosting'
+        },
+        'catboost_classifier': {
+            'name': 'CatBoost Classifier',
+            'task': 'classification',
+            'default_params': {'n_estimators': 100},
+            'compatible_types': ['classification', 'binary'],
+            'description': 'High-performance gradient boosting on decision trees'
         },
         'linear_regression': {
             'name': 'Linear Regression',
@@ -155,10 +205,14 @@ ALGORITHMS = {
 # Create models directory if it doesn't exist
 os.makedirs('models', exist_ok=True)
 
+
+# Extend TrainRequest to support user datasets and custom target
 class TrainRequest(BaseModel):
     algorithm: str
-    dataset_name: str
+    dataset_name: str  # can be default or user dataset filename
     params: dict = {}
+    is_user_dataset: bool = False
+    target_column: str = None
 
 @app.get("/datasets/default")
 async def list_default_datasets():
@@ -195,10 +249,110 @@ async def get_default_dataset(dataset_name: str):
         "shape": df.shape
     }
 
+
 @app.post("/upload")
 async def upload_dataset(file: UploadFile = File(...)):
-    df = pd.read_csv(file.file)
-    return {"message": "Dataset uploaded successfully", "columns": df.columns.tolist()}
+    # Read file (support CSV and Excel)
+    filename = file.filename
+    if filename.endswith('.csv'):
+        df = pd.read_csv(file.file)
+    elif filename.endswith(('.xls', '.xlsx')):
+        df = pd.read_excel(file.file)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a CSV or Excel file.")
+
+    # Clean the dataset automatically
+    cleaned_df, cleaning_report = clean_dataset(df)
+
+    # Save both original and cleaned datasets
+    os.makedirs('user_datasets', exist_ok=True)
+    original_path = os.path.join('user_datasets', f"original_{filename}")
+    cleaned_path = os.path.join('user_datasets', filename)
+    df.to_csv(original_path, index=False)
+    cleaned_df.to_csv(cleaned_path, index=False)
+
+    # Get column information for all columns
+    column_info = {}
+    for col in cleaned_df.columns:
+        nunique = cleaned_df[col].nunique()
+        col_dtype = cleaned_df[col].dtype
+        is_numeric = np.issubdtype(col_dtype, np.number)
+        
+        col_info = {
+            'unique_values': int(nunique),
+            'dtype': str(col_dtype),
+            'is_numeric': is_numeric,
+            'sample_values': cleaned_df[col].dropna().head(5).tolist(),
+            'suggested_task': [],
+            'suggested_algorithms': []
+        }
+        
+        # Suggest possible ML tasks and algorithms based on column properties
+        if nunique <= 20 and nunique > 1:
+            col_info['suggested_task'].append('classification')
+            # Suggest classification algorithms
+            if nunique == 2:
+                col_info['suggested_algorithms'].extend([
+                    'logistic_regression',
+                    'random_forest',
+                    'svm',
+                    'gradient_boosting_classifier'
+                ])
+            else:
+                col_info['suggested_algorithms'].extend([
+                    'random_forest',
+                    'gradient_boosting_classifier',
+                    'multinomial_nb',
+                    'xgboost_classifier'
+                ])
+        
+        if is_numeric and nunique > 20:
+            col_info['suggested_task'].append('regression')
+            # Suggest regression algorithms
+            col_info['suggested_algorithms'].extend([
+                'linear_regression',
+                'random_forest_regressor',
+                'gradient_boosting_regressor',
+                'svr'
+            ])
+            
+        column_info[col] = col_info
+
+    # Include all columns as candidates, with their properties
+    target_candidates = [col for col in cleaned_df.columns]
+    
+    # No specific inferred type until user selects target
+    inferred_type = 'unknown'
+    target_info = {}
+
+    return {
+        "filename": filename,
+        "shape": cleaned_df.shape,
+        "columns": cleaned_df.columns.tolist(),
+        "column_info": column_info,  # Detailed information about each column
+        "target_candidates": target_candidates,
+        "cleaning_report": cleaning_report,
+        "preview_data": cleaned_df.head(5).to_dict(orient='records')
+    }
+
+    preprocessing = {
+        'missing_values': missing,
+        'categorical_columns': categorical,
+        'numeric_columns': numeric,
+        'suggested_scaler': 'StandardScaler' if inferred_type != 'classification' or len(categorical) == 0 else 'OneHotEncoder+StandardScaler',
+        'suggested_encoding': 'OneHotEncoder' if categorical else None
+    }
+
+    return {
+        "message": "Dataset uploaded and analyzed successfully",
+        "columns": df.columns.tolist(),
+        "shape": df.shape,
+        "target_candidates": target_candidates,
+        "inferred_type": inferred_type,
+        "target_info": target_info,
+        "preprocessing": preprocessing,
+        "save_path": save_path
+    }
 
 # Helper function to get model class
 def get_model_class(algorithm: str):
@@ -238,15 +392,70 @@ async def get_compatible_datasets(algorithm: str):
     
     raise HTTPException(status_code=404, detail="Algorithm not found")
 
+@app.get("/datasets/kaggle")
+async def list_kaggle_datasets(task_type: str):
+    """List Kaggle datasets by ML task type (classification, regression, clustering)"""
+    try:
+        datasets = search_kaggle_datasets(task_type)
+        return {"datasets": datasets}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Kaggle dataset import endpoint
+class KaggleImportRequest(BaseModel):
+    dataset_ref: str
+    file_name: str
+    target_col: str = None
+
+@app.post("/datasets/kaggle/import")
+async def import_kaggle_dataset(request: KaggleImportRequest):
+    """Download and preprocess a Kaggle dataset."""
+    try:
+        X, y, df = download_kaggle_dataset(request.dataset_ref, request.file_name, request.target_col)
+        # Optionally run cleaning/preprocessing here
+        # For now, just return basic info
+        return {
+            "columns": df.columns.tolist(),
+            "shape": df.shape,
+            "preview": df.head(10).to_dict(orient="records"),
+            "target_col": request.target_col,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/train")
 async def train_model(request: TrainRequest):
     try:
-        # Load dataset
-        dataset = load_dataset(request.dataset_name)
-        X = dataset.data
+        # Load dataset (default or user)
+        if request.is_user_dataset:
+            df = pd.read_csv(os.path.join('user_datasets', request.dataset_name))
+            # Target column must be specified for user datasets
+            if not request.target_column or request.target_column not in df.columns:
+                raise HTTPException(status_code=400, detail="Target column must be specified for user dataset.")
+            y = df[request.target_column]
+            X = df.drop(columns=[request.target_column])
+        else:
+            dataset = load_dataset(request.dataset_name)
+            X = dataset.data
+            y = getattr(dataset, 'target', None)
 
-        # Preprocess features
-        scaler = StandardScaler()
+        # Preprocessing: handle missing values, encode categoricals, scale numerics
+        X = pd.DataFrame(X)
+        # Fill missing values
+        for col in X.columns:
+            if X[col].dtype == object:
+                X[col] = X[col].fillna(X[col].mode()[0] if not X[col].mode().empty else "")
+            else:
+                X[col] = X[col].fillna(X[col].mean())
+        # Encode categoricals
+        for col in X.columns:
+            if X[col].dtype == object:
+                X[col] = pd.factorize(X[col])[0]
+        # Scale features
+        if request.algorithm == 'multinomial_nb':
+            scaler = MinMaxScaler()
+        else:
+            scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
 
         # Get model class
@@ -262,7 +471,6 @@ async def train_model(request: TrainRequest):
 
         if is_supervised:
             # Supervised learning
-            y = dataset.target
             X_train, X_test, y_train, y_test = train_test_split(
                 X_scaled, y, test_size=0.2, random_state=42
             )

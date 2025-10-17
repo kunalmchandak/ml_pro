@@ -31,6 +31,10 @@ const Visualization = () => {
   const isRegression = 'r2_score' in results;
   const isUnsupervised = !isClassification && !isRegression;
 
+  // Determine algorithm type for better display
+  const isBoostingAlgorithm = results.algorithm?.includes('boost');
+  const isNaiveBayes = results.algorithm?.includes('nb');
+
   // Get specific metrics for chart
   const metrics = isRegression
     ? ['mse', 'mae', 'r2_score']
@@ -38,13 +42,24 @@ const Visualization = () => {
     ? ['accuracy', 'precision', 'recall', 'f1_score']
     : ['silhouette_score', 'calinski_harabasz_score', 'davies_bouldin_score', 'inertia'].filter(key => key in results);
 
+  // Choose chart color based on algorithm type
+  const getChartColor = () => {
+    if (isBoostingAlgorithm) return 'rgba(52, 211, 153, 0.5)'; // Green for boosting
+    if (isNaiveBayes) return 'rgba(251, 146, 60, 0.5)'; // Orange for Naive Bayes
+    if (isClassification) return 'rgba(59, 130, 246, 0.5)'; // Blue for classification
+    if (isRegression) return 'rgba(139, 92, 246, 0.5)'; // Purple for regression
+    return 'rgba(156, 163, 175, 0.5)'; // Gray for unsupervised
+  };
+
   const chartData = {
-    labels: metrics.map(m => m.replace('_', ' ').replace('score', ' Score')),
+    labels: metrics.map(m => m.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')),
     datasets: [
       {
-        label: isRegression ? 'Regression Metrics' : isClassification ? 'Classification Metrics' : 'Unsupervised Metrics',
+        label: isRegression ? 'Regression Metrics' : 
+               isClassification ? `${isBoostingAlgorithm ? 'Boosting' : isNaiveBayes ? 'Naive Bayes' : ''} Classification Metrics` : 
+               'Unsupervised Metrics',
         data: metrics.map(m => results[m] || 0),
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        backgroundColor: getChartColor(),
       }
     ]
   };
@@ -105,10 +120,27 @@ const Visualization = () => {
           <h2 className="text-xl font-semibold mb-4">Model Details</h2>
           <div className="space-y-2">
             <p><strong>Dataset:</strong> {results.dataset_name}</p>
-            <p><strong>Algorithm:</strong> {results.algorithm}</p>
+            <p><strong>Algorithm:</strong> {results.algorithm?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</p>
+            <p><strong>Algorithm Type:</strong> {
+              isBoostingAlgorithm ? 'Gradient Boosting' :
+              isNaiveBayes ? 'Naive Bayes' :
+              isClassification ? 'Classification' :
+              isRegression ? 'Regression' : 'Unsupervised'
+            }</p>
             <p><strong>Samples:</strong> {results.n_samples}</p>
             <p><strong>Features:</strong> {results.n_features}</p>
-            <p><strong>Status:</strong> <span className={results.status === 'good' ? 'text-green-600' : 'text-red-600'}>{results.status}</span></p>
+            <p>
+              <strong>Status:</strong>{' '}
+              <span 
+                className={`px-2 py-1 rounded ${
+                  results.status === 'good' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}
+              >
+                {results.status === 'good' ? 'Good Performance' : 'Needs Improvement'}
+              </span>
+            </p>
 
             {isClassification && (
               <>
