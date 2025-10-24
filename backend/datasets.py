@@ -46,7 +46,7 @@ DEFAULT_DATASETS = {
     'boston_housing': {
         'loader': lambda: load_url_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data', 
                                      target_col='MEDV', 
-                                     sep='\s+',
+                                     sep=r'\s+',
                                      names=['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 
                                            'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'LSTAT', 'MEDV']),
         'description': 'Boston Housing dataset from UCI ML repository',
@@ -68,48 +68,119 @@ DEFAULT_DATASETS = {
         'features': 8,
         'samples': 768
     }
+    ,
+    'groceries_association': {
+        'loader': lambda: load_groceries_transactions('https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/groceries.csv'),
+        'description': 'Groceries transactions for association rule mining',
+        'types': ['association'],
+        'features': None,
+        'samples': 9835
+    },
+    'retail_market_basket': {
+        'loader': lambda: load_market_basket_transactions([
+            'https://raw.githubusercontent.com/selva86/datasets/master/Market_Basket_Optimisation.csv',
+            'https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/groceries.csv'
+        ]),
+        'description': 'Retail market basket transactions',
+        'types': ['association'],
+        'features': None,
+        'samples': 7501
+    }
 }
+
+def load_groceries_transactions(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        # Each line is a transaction: items separated by commas
+        transactions = [line.strip().split(',') for line in response.text.splitlines() if line.strip()]
+        class Bunch:
+            def __init__(self, **kwargs):
+                self.__dict__.update(kwargs)
+        return Bunch(data=transactions, target=None, feature_names=None)
+    except Exception as e:
+        print(f"Error loading groceries transactions from {url}: {str(e)}")
+        raise ValueError(f"Failed to load groceries transactions from {url}: {e}")
+
+def load_market_basket_transactions(url):
+    # url may be a single string or a list of fallback URLs
+    urls = url if isinstance(url, (list, tuple)) else [url]
+    last_exc = None
+    for u in urls:
+        try:
+            response = requests.get(u)
+            response.raise_for_status()
+            text = response.text
+            # Parse the file line-by-line to handle both single-column comma-separated
+            # transaction files and multi-column CSVs without relying on pandas tokenization.
+            lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+            transactions = []
+            for ln in lines:
+                # If the line contains commas, treat it as comma-separated items
+                if ',' in ln:
+                    items = [it.strip() for it in ln.split(',') if it.strip()]
+                    transactions.append(items)
+                    continue
+                # If the line contains semicolons, split by semicolon
+                if ';' in ln:
+                    items = [it.strip() for it in ln.split(';') if it.strip()]
+                    transactions.append(items)
+                    continue
+                # Otherwise, try splitting by whitespace (fallback)
+                parts = [p.strip() for p in ln.split() if p.strip()]
+                if len(parts) > 1:
+                    transactions.append(parts)
+                    continue
+                # If it's a single token, keep as single-item transaction
+                transactions.append([ln])
+
+            class Bunch:
+                def __init__(self, **kwargs):
+                    self.__dict__.update(kwargs)
+
+            return Bunch(data=transactions, target=None, feature_names=None)
+        except Exception as e:
+            last_exc = e
+            # try next URL in list
+            continue
+    # if none succeeded
+    print(f"Error loading market basket transactions from provided URLs. Last error: {last_exc}")
+    raise ValueError(f"Failed to load market basket transactions: {last_exc}")
 
 def load_url_csv(url, target_col, sep=None, names=None):
     try:
-        # Download the data using requests
         response = requests.get(url)
         response.raise_for_status()
-        
-        # Read the CSV data
         if sep:
             df = pd.read_csv(StringIO(response.text), sep=sep, names=names)
         else:
             df = pd.read_csv(StringIO(response.text), names=names)
-            
-        # Handle missing values more gracefully
-        df = df.dropna(subset=[target_col])
-        
-        # Convert all columns to numeric where possible
-        for col in df.columns:
-            try:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-            except:
-                continue
-                
-        df = df.dropna()
-        X = df.drop(target_col, axis=1).values
-        y = df[target_col].values
-        feature_names = df.drop(target_col, axis=1).columns.tolist()
-        
+
+        # For association datasets, target_col may be None
+        if target_col is not None:
+            df = df.dropna(subset=[target_col])
+            for col in df.columns:
+                try:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                except:
+                    continue
+            df = df.dropna()
+            X = df.drop(target_col, axis=1).values
+            y = df[target_col].values
+            feature_names = df.drop(target_col, axis=1).columns.tolist()
+        else:
+            # For association rule mining, return raw transaction data
+            X = df.values
+            y = None
+            feature_names = df.columns.tolist()
+
         class Bunch:
             def __init__(self, **kwargs):
                 self.__dict__.update(kwargs)
         return Bunch(data=X, target=y, feature_names=feature_names)
-        
     except Exception as e:
         print(f"Error loading dataset from {url}: {str(e)}")
         raise ValueError(f"Failed to load CSV from {url}: {e}")
-    
-    class Bunch:
-        def __init__(self, **kwargs):
-            self.__dict__.update(kwargs)
-    return Bunch(data=X, target=y, feature_names=feature_names)
 
 def load_url_excel(url, target_col):
     try:
