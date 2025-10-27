@@ -24,15 +24,42 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Algorithm type detection
-  const supervisedAlgorithms = [
-    'logistic_regression', 'random_forest', 'svm', 'knn', 'decision_tree', 'gaussian_nb', 'multinomial_nb', 'bernoulli_nb',
-    'gradient_boosting_classifier', 'xgboost_classifier', 'lightgbm_classifier', 'catboost_classifier',
-    'linear_regression', 'ridge', 'lasso', 'decision_tree_regressor', 'random_forest_regressor', 'gradient_boosting',
-    'xgboost', 'lightgbm', 'svr', 'knn_regressor'
-  ];
-  const unsupervisedAlgorithms = ['kmeans', 'dbscan', 'agglomerative', 'birch'];
-  const associationAlgorithms = ['apriori', 'fp_growth'];
+  // Algorithm categories and types
+  const algorithmsByCategory = {
+    supervised: {
+      classification: [
+        'logistic_regression', 'random_forest', 'svm', 'knn', 'decision_tree', 
+        'gaussian_nb', 'multinomial_nb', 'bernoulli_nb', 'gradient_boosting_classifier', 
+        'xgboost_classifier', 'lightgbm_classifier', 'catboost_classifier'
+      ],
+      regression: [
+        'linear_regression', 'ridge', 'lasso', 'decision_tree_regressor',
+        'random_forest_regressor', 'gradient_boosting', 'xgboost', 'lightgbm',
+        'svr', 'knn_regressor'
+      ]
+    },
+    unsupervised: {
+      clustering: ['kmeans', 'dbscan', 'agglomerative', 'birch'],
+      association: ['apriori', 'fp_growth']
+    }
+  };
+
+  // Get available algorithms based on selected category
+  const getAvailableAlgorithms = () => {
+    if (location.state?.category && location.state?.subCategory) {
+      return algorithmsByCategory[location.state.category][location.state.subCategory] || [];
+    }
+    return [
+      ...algorithmsByCategory.supervised.classification,
+      ...algorithmsByCategory.supervised.regression,
+      ...algorithmsByCategory.unsupervised.clustering,
+      ...algorithmsByCategory.unsupervised.association
+    ];
+  };
+
+  const supervisedAlgorithms = [...algorithmsByCategory.supervised.classification, ...algorithmsByCategory.supervised.regression];
+  const unsupervisedAlgorithms = [...algorithmsByCategory.unsupervised.clustering];
+  const associationAlgorithms = algorithmsByCategory.unsupervised.association;
   
   // Determine algorithm type
   const isSupervised = supervisedAlgorithms.includes(algorithm);
@@ -191,122 +218,131 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">ML Dashboard</h1>
-      <div className="grid grid-cols-1 gap-6">
-        {/* 1. Select Algorithm */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">1. Select Algorithm</h2>
-          <select
-            value={algorithm}
-            onChange={(e) => setAlgorithm(e.target.value)}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Choose an algorithm</option>
-            <optgroup label="Supervised Learning - Classification">
-              <option value="logistic_regression">Logistic Regression</option>
-              <option value="random_forest">Random Forest</option>
-              <option value="svm">SVM</option>
-              <option value="knn">K-Nearest Neighbors</option>
-              <option value="decision_tree">Decision Tree</option>
-              <option value="gaussian_nb">Gaussian Naive Bayes</option>
-              <option value="multinomial_nb">Multinomial Naive Bayes</option>
-              <option value="bernoulli_nb">Bernoulli Naive Bayes</option>
-              <option value="gradient_boosting_classifier">Gradient Boosting Classifier</option>
-              <option value="xgboost_classifier">XGBoost Classifier</option>
-              <option value="lightgbm_classifier">LightGBM Classifier</option>
-              <option value="catboost_classifier">CatBoost Classifier</option>
-            </optgroup>
-            <optgroup label="Supervised Learning - Regression">
-              <option value="linear_regression">Linear Regression</option>
-              <option value="ridge">Ridge Regression</option>
-              <option value="lasso">Lasso Regression</option>
-              <option value="decision_tree_regressor">Decision Tree Regressor</option>
-              <option value="random_forest_regressor">Random Forest Regressor</option>
-              <option value="gradient_boosting">Gradient Boosting Regressor</option>
-              <option value="xgboost">XGBoost Regressor</option>
-              <option value="lightgbm">LightGBM Regressor</option>
-              <option value="svr">Support Vector Regressor</option>
-              <option value="knn_regressor">K-Nearest Neighbors Regressor</option>
-            </optgroup>
-            <optgroup label="Unsupervised Learning">
-              <option value="kmeans">K-Means Clustering</option>
-              <option value="dbscan">DBSCAN</option>
-              <option value="agglomerative">Agglomerative Clustering</option>
-              <option value="birch">BIRCH Clustering</option>
-            </optgroup>
-            <optgroup label="Association Rules">
-              <option value="apriori">Apriori (Association Rules)</option>
-              <option value="fp_growth">FP-Growth (Association Rules)</option>
-            </optgroup>
-          </select>
-          {algorithmInfo && (
-            <div className="mt-2 text-sm text-gray-600">
-              {algorithmInfo.description}
+    <div className="min-h-screen bg-gradient-to-br from-white/40 via-purple-50/30 to-indigo-50/20">
+      <div className="container mx-auto px-6 py-12">
+        <h1 className="text-4xl font-extrabold mb-6 text-gray-900">ML Dashboard</h1>
+
+        <div className="grid grid-cols-1 gap-6">
+          {/* 1. Select Algorithm */}
+          <div className="group bg-white/90 backdrop-blur-lg p-6 rounded-xl border border-purple-200 hover:shadow-xl transition-all duration-300">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">1. Select Algorithm</h2>
+            <select
+              value={algorithm}
+              onChange={(e) => setAlgorithm(e.target.value)}
+              className="w-full p-3 rounded-lg bg-white/80 border border-purple-200"
+            >
+              <option value="">Choose an algorithm</option>
+              <optgroup label="Supervised Learning - Classification">
+                <option value="logistic_regression">Logistic Regression</option>
+                <option value="random_forest">Random Forest</option>
+                <option value="svm">SVM</option>
+                <option value="knn">K-Nearest Neighbors</option>
+                <option value="decision_tree">Decision Tree</option>
+                <option value="gaussian_nb">Gaussian Naive Bayes</option>
+                <option value="multinomial_nb">Multinomial Naive Bayes</option>
+                <option value="bernoulli_nb">Bernoulli Naive Bayes</option>
+                <option value="gradient_boosting_classifier">Gradient Boosting Classifier</option>
+                <option value="xgboost_classifier">XGBoost Classifier</option>
+                <option value="lightgbm_classifier">LightGBM Classifier</option>
+                <option value="catboost_classifier">CatBoost Classifier</option>
+              </optgroup>
+              <optgroup label="Supervised Learning - Regression">
+                <option value="linear_regression">Linear Regression</option>
+                <option value="ridge">Ridge Regression</option>
+                <option value="lasso">Lasso Regression</option>
+                <option value="decision_tree_regressor">Decision Tree Regressor</option>
+                <option value="random_forest_regressor">Random Forest Regressor</option>
+                <option value="gradient_boosting">Gradient Boosting Regressor</option>
+                <option value="xgboost">XGBoost Regressor</option>
+                <option value="lightgbm">LightGBM Regressor</option>
+                <option value="svr">Support Vector Regressor</option>
+                <option value="knn_regressor">K-Nearest Neighbors Regressor</option>
+              </optgroup>
+              <optgroup label="Unsupervised Learning">
+                <option value="kmeans">K-Means Clustering</option>
+                <option value="dbscan">DBSCAN</option>
+                <option value="agglomerative">Agglomerative Clustering</option>
+                <option value="birch">BIRCH Clustering</option>
+              </optgroup>
+              <optgroup label="Association Rules">
+                <option value="apriori">Apriori (Association Rules)</option>
+                <option value="fp_growth">FP-Growth (Association Rules)</option>
+              </optgroup>
+            </select>
+            {algorithmInfo && (
+              <div className="mt-2 text-sm text-gray-600">
+                {algorithmInfo.description}
+              </div>
+            )}
+          </div>
+
+          {/* 2. Upload or Select Dataset */}
+          <div className="group bg-white/90 backdrop-blur-lg p-6 rounded-xl border border-purple-200 transition-all duration-300">
+            <DatasetSelector
+              selectedDataset={selectedDataset}
+              onDatasetSelect={(value) => {
+                console.log('Dataset selected:', value);
+                setSelectedDataset(value);
+                // If user dataset, set extra info
+                const userDs = userDatasets.find(ds => ds.name === value);
+                console.log('User dataset found:', userDs);
+                setSelectedUserDataset(userDs || null);
+                if (userDs) {
+                  setUserTarget(userDs.analysis.selectedTarget || '');
+                  setUserType(userDs.analysis.selectedType || '');
+                } else {
+                  setUserTarget('');
+                  setUserType('');
+                }
+              }}
+              compatibleDatasets={compatibleDatasets}
+              userDatasets={userDatasets}
+              onUserDataset={handleUserDataset}
+            />
+
+            {selectedUserDataset && (
+              <div className="mt-4 bg-white/90 backdrop-blur-md p-4 rounded-lg border border-purple-200">
+                <div><strong>Target column:</strong> {userTarget}</div>
+                <div><strong>Task type:</strong> {userType}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Show relevant tools based on algorithm type */}
+          {isUnsupervised && (
+            <div className="group bg-white/90 backdrop-blur-lg p-6 rounded-xl border border-purple-200 mt-4 transition-all duration-300">
+              <ClusterTools selectedDataset={selectedDataset} isUserDataset={!!selectedUserDataset} />
+            </div>
+          )}
+          {isAssociation && (
+            <div className="group bg-white/90 backdrop-blur-lg p-6 rounded-xl border border-purple-200 mt-4 transition-all duration-300">
+              <AssociationRules selectedDataset={selectedDataset} isUserDataset={!!selectedUserDataset} />
+            </div>
+          )}
+
+          {/* 3. Train Model button only for supervised/regression algorithms */}
+          {isSupervised && (
+            <div className="flex flex-col items-end mt-4">
+              {errorMsg && (
+                <div className="mb-2 text-red-600 text-sm">{errorMsg}</div>
+              )}
+              <button
+                onClick={handleTrain}
+                disabled={
+                  loading ||
+                  !selectedDataset ||
+                  (selectedUserDataset && (!userTarget || !userType))
+                }
+                className="mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg 
+                         hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 shadow-lg"
+              >
+                {loading ? 'Training...' : 'Train Model'}
+              </button>
             </div>
           )}
         </div>
-
-        {/* 2. Upload or Select Dataset */}
-        <DatasetSelector
-          selectedDataset={selectedDataset}
-          onDatasetSelect={(value) => {
-            console.log('Dataset selected:', value);
-            setSelectedDataset(value);
-            // If user dataset, set extra info
-            const userDs = userDatasets.find(ds => ds.name === value);
-            console.log('User dataset found:', userDs);
-            setSelectedUserDataset(userDs || null);
-            if (userDs) {
-              setUserTarget(userDs.analysis.selectedTarget || '');
-              setUserType(userDs.analysis.selectedType || '');
-            } else {
-              setUserTarget('');
-              setUserType('');
-            }
-          }}
-          compatibleDatasets={compatibleDatasets}
-          userDatasets={userDatasets}
-          onUserDataset={handleUserDataset}
-        />
-
-        {selectedUserDataset && (
-          <div className="mt-2 bg-white p-4 rounded-lg shadow">
-            <div><strong>Target column:</strong> {userTarget}</div>
-            <div><strong>Task type:</strong> {userType}</div>
-          </div>
-        )}
-        </div>
-
-          {/* Show relevant tools based on algorithm type */}
-        {isUnsupervised && (
-          <ClusterTools selectedDataset={selectedDataset} isUserDataset={!!selectedUserDataset} />
-        )}
-        {isAssociation && (
-          <AssociationRules selectedDataset={selectedDataset} isUserDataset={!!selectedUserDataset} />
-        )}
-
-        {/* 3. Train Model button only for supervised/regression algorithms */}
-        {isSupervised && (
-          <div className="flex flex-col items-end">
-            {errorMsg && (
-              <div className="mb-2 text-red-600 text-sm">{errorMsg}</div>
-            )}
-            <button
-              onClick={handleTrain}
-              disabled={
-                loading ||
-                !selectedDataset ||
-                (selectedUserDataset && (!userTarget || !userType))
-              }
-              className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg 
-                       hover:bg-blue-700 disabled:opacity-50"
-            >
-              {loading ? 'Training...' : 'Train Model'}
-            </button>
-          </div>
-        )}
       </div>
+    </div>
   );
 };
 
