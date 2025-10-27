@@ -9,3 +9,5 @@ xgboost
 lightgbm
 kaggle
 mlxtend
+plotly
+catboost
