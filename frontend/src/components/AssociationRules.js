@@ -100,37 +100,100 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
     return { nodes, edges };
   };
 
+  const animationClasses = {
+    card: "transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200/50",
+    button: "transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl",
+    input: "transition-all duration-200 focus:ring-2 focus:ring-purple-400",
+    table: "bg-white/90 backdrop-blur-lg rounded-xl border-2 border-purple-200 overflow-hidden",
+    th: "px-4 py-2 bg-gradient-to-r from-purple-600/10 to-indigo-600/10 text-left text-sm font-semibold text-gray-700",
+    td: "px-4 py-2 border-t border-purple-100"
+  };
+
   return (
-    <div className="bg-white p-4 rounded shadow mt-4">
-      <h3 className="text-lg font-semibold mb-2">Association Rules</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
-        <div>
-          <label className="block text-sm">Min Support</label>
-          <input type="number" step="0.01" min="0" max="1" value={minSupport}
-                 onChange={e => setMinSupport(e.target.value)} className="w-full p-2 border rounded" />
+    <div className="bg-white/90 backdrop-blur-lg p-6 rounded-xl border-4 border-purple-400 hover:border-purple-600 transition-all duration-300 shadow-lg">
+      <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+        Association Rules
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className={`${animationClasses.card} bg-white/80 p-4 rounded-xl border-2 border-purple-200`}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Min Support</label>
+          <input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            max="1" 
+            value={minSupport}
+            onChange={e => setMinSupport(e.target.value)} 
+            className={`w-full p-3 border-2 border-purple-200 rounded-lg bg-white/80 ${animationClasses.input}`} 
+          />
         </div>
-        <div>
-          <label className="block text-sm">Min Confidence</label>
-          <input type="number" step="0.01" min="0" max="1" value={minThreshold}
-                 onChange={e => setMinThreshold(e.target.value)} className="w-full p-2 border rounded" />
+        <div className={`${animationClasses.card} bg-white/80 p-4 rounded-xl border-2 border-purple-200`}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Min Confidence</label>
+          <input 
+            type="number" 
+            step="0.01" 
+            min="0" 
+            max="1" 
+            value={minThreshold}
+            onChange={e => setMinThreshold(e.target.value)} 
+            className={`w-full p-3 border-2 border-purple-200 rounded-lg bg-white/80 ${animationClasses.input}`} 
+          />
         </div>
         <div className="flex items-end">
-          <button onClick={runApriori} className="bg-indigo-600 text-white px-3 py-2 rounded">Run Apriori</button>
+          <button 
+            onClick={runApriori} 
+            className={`${animationClasses.button} w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 
+              text-white font-bold py-3 px-6 rounded-lg`}
+          >
+            Run
+          </button>
         </div>
       </div>
 
       {evaluation && (
-        <div className="mt-3">
-          <h4 className="font-medium mb-2">Evaluation Summary</h4>
-          <div className="text-sm">
-            <div><strong>Number of rules:</strong> {evaluation.n_rules}</div>
-            <div><strong>Number of frequent itemsets:</strong> {evaluation.n_frequent_itemsets}</div>
-            <div><strong>Average support:</strong> {evaluation.avg_support ? (evaluation.avg_support*100).toFixed(2)+'%' : 'n/a'}</div>
-            <div><strong>Average confidence:</strong> {evaluation.avg_confidence ? (evaluation.avg_confidence*100).toFixed(2)+'%' : 'n/a'}</div>
-            <div><strong>Average lift:</strong> {evaluation.avg_lift ? evaluation.avg_lift.toFixed(3) : 'n/a'}</div>
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Evaluation Summary
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Rules Found</div>
+              <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                {evaluation.n_rules}
+              </div>
+            </div>
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Frequent Itemsets</div>
+              <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                {evaluation.n_frequent_itemsets}
+              </div>
+            </div>
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Average Support</div>
+              <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                {evaluation.avg_support ? (evaluation.avg_support*100).toFixed(2)+'%' : 'n/a'}
+              </div>
+            </div>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Average Confidence</div>
+              <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                {evaluation.avg_confidence ? (evaluation.avg_confidence*100).toFixed(2)+'%' : 'n/a'}
+              </div>
+            </div>
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Average Lift</div>
+              <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                {evaluation.avg_lift ? evaluation.avg_lift.toFixed(3) : 'n/a'}
+              </div>
+            </div>
+          </div>
+
           {modelPath && (
-            <div className="mt-2">
+            <div className="mt-6">
               <button
                 onClick={async () => {
                   try {
@@ -149,7 +212,8 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
                     setError('Download failed');
                   }
                 }}
-                className="bg-gray-700 text-white px-3 py-1 rounded"
+                className={`${animationClasses.button} bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 
+                  text-white font-bold py-3 px-6 rounded-lg`}
               >
                 Download Rules
               </button>
@@ -158,25 +222,43 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
         </div>
       )}
 
-      {loading && <div className="text-sm text-blue-600">Running association mining...</div>}
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {loading && (
+        <div className="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 animate-pulse">
+          Running association mining...
+        </div>
+      )}
+      {error && (
+        <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          {error}
+        </div>
+      )}
 
       {itemsets && itemsets.length > 0 && (
-        <div className="mt-3">
-          <h4 className="font-medium mb-2">Frequent Itemsets</h4>
-          <div className="overflow-x-auto text-sm">
-            <table className="min-w-full">
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Frequent Itemsets
+          </h4>
+          <div className="overflow-x-auto">
+            <table className={`${animationClasses.table} min-w-full`}>
               <thead>
                 <tr>
-                  <th className="px-2 py-1 bg-gray-100">support</th>
-                  <th className="px-2 py-1 bg-gray-100">itemsets</th>
+                  <th className={animationClasses.th}>Support</th>
+                  <th className={animationClasses.th}>Itemsets</th>
                 </tr>
               </thead>
               <tbody>
                 {itemsets.map((it, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="px-2 py-1">{it.support?.toFixed ? (it.support * 100).toFixed(2) + '%' : String(it.support)}</td>
-                    <td className="px-2 py-1">{JSON.stringify((it.itemsets || it['itemsets'] || it['items'] || it).map(x => String(x).replace(/^\d+=/, '')))}</td>
+                  <tr key={idx} className="hover:bg-purple-50/50 transition-colors">
+                    <td className={animationClasses.td}>
+                      <span className="font-semibold text-purple-600">
+                        {it.support?.toFixed ? (it.support * 100).toFixed(2) + '%' : String(it.support)}
+                      </span>
+                    </td>
+                    <td className={animationClasses.td}>
+                      <code className="bg-gray-50 px-2 py-1 rounded text-sm">
+                        {JSON.stringify((it.itemsets || it['itemsets'] || it['items'] || it).map(x => String(x).replace(/^\d+=/, '')))}
+                      </code>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -186,27 +268,43 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
       )}
 
       {rules && rules.length > 0 && (
-        <div className="mt-3">
-          <h4 className="font-medium mb-2">Association Rules</h4>
-          <div className="overflow-x-auto text-sm">
-            <table className="min-w-full">
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Association Rules
+          </h4>
+          <div className="overflow-x-auto">
+            <table className={`${animationClasses.table} min-w-full`}>
               <thead>
                 <tr>
-                  <th className="px-2 py-1 bg-gray-100">antecedents</th>
-                  <th className="px-2 py-1 bg-gray-100">consequents</th>
-                  <th className="px-2 py-1 bg-gray-100">support</th>
-                  <th className="px-2 py-1 bg-gray-100">confidence</th>
-                  <th className="px-2 py-1 bg-gray-100">lift</th>
+                  <th className={animationClasses.th}>Antecedents</th>
+                  <th className={animationClasses.th}>Consequents</th>
+                  <th className={animationClasses.th}>Support</th>
+                  <th className={animationClasses.th}>Confidence</th>
+                  <th className={animationClasses.th}>Lift</th>
                 </tr>
               </thead>
               <tbody>
                 {rules.map((r, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="px-2 py-1">{JSON.stringify((r.antecedents || r['antecedents'] || r['antecedent'] || []).map(x => String(x).replace(/^\d+=/, '')))}</td>
-                    <td className="px-2 py-1">{JSON.stringify((r.consequents || r['consequents'] || r['consequent'] || []).map(x => String(x).replace(/^\d+=/, '')))}</td>
-                    <td className="px-2 py-1">{r.support?.toFixed ? (r.support * 100).toFixed(2) + '%' : String(r.support)}</td>
-                    <td className="px-2 py-1">{r.confidence?.toFixed ? (r.confidence * 100).toFixed(2) + '%' : String(r.confidence)}</td>
-                    <td className="px-2 py-1">{r.lift?.toFixed ? r.lift.toFixed(4) : String(r.lift)}</td>
+                  <tr key={idx} className="hover:bg-purple-50/50 transition-colors">
+                    <td className={animationClasses.td}>
+                      <code className="bg-gray-50 px-2 py-1 rounded text-sm">
+                        {JSON.stringify((r.antecedents || r['antecedents'] || r['antecedent'] || []).map(x => String(x).replace(/^\d+=/, '')))}
+                      </code>
+                    </td>
+                    <td className={animationClasses.td}>
+                      <code className="bg-gray-50 px-2 py-1 rounded text-sm">
+                        {JSON.stringify((r.consequents || r['consequents'] || r['consequent'] || []).map(x => String(x).replace(/^\d+=/, '')))}
+                      </code>
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-purple-600`}>
+                      {r.support?.toFixed ? (r.support * 100).toFixed(2) + '%' : String(r.support)}
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-indigo-600`}>
+                      {r.confidence?.toFixed ? (r.confidence * 100).toFixed(2) + '%' : String(r.confidence)}
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold`}>
+                      {r.lift?.toFixed ? r.lift.toFixed(4) : String(r.lift)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -217,23 +315,33 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
 
       {/* Show top items summary even if no itemsets/rules */}
       {topItems && topItems.length > 0 && (
-        <div className="mt-4">
-          <h4 className="font-medium mb-2">Top Items (by count)</h4>
-          <div className="overflow-x-auto text-sm">
-            <table className="min-w-full">
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Top Items (by count)
+          </h4>
+          <div className="overflow-x-auto">
+            <table className={`${animationClasses.table} min-w-full`}>
               <thead>
                 <tr>
-                  <th className="px-2 py-1 bg-gray-100">item</th>
-                  <th className="px-2 py-1 bg-gray-100">count</th>
-                  <th className="px-2 py-1 bg-gray-100">support</th>
+                  <th className={animationClasses.th}>Item</th>
+                  <th className={animationClasses.th}>Count</th>
+                  <th className={animationClasses.th}>Support</th>
                 </tr>
               </thead>
               <tbody>
                 {topItems.map((it, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="px-2 py-1">{it.item}</td>
-                    <td className="px-2 py-1">{it.count}</td>
-                    <td className="px-2 py-1">{(it.support * 100).toFixed(2)}%</td>
+                  <tr key={idx} className="hover:bg-purple-50/50 transition-colors">
+                    <td className={animationClasses.td}>
+                      <code className="bg-gray-50 px-2 py-1 rounded text-sm">
+                        {it.item}
+                      </code>
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-purple-600`}>
+                      {it.count}
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-indigo-600`}>
+                      {(it.support * 100).toFixed(2)}%
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -243,31 +351,51 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
       )}
 
       {topPairs && topPairs.length > 0 && (
-        <div className="mt-4">
-          <h4 className="font-medium mb-2">Top Pairs</h4>
-          <div className="overflow-x-auto text-sm">
-            <table className="min-w-full">
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Top Pairs
+          </h4>
+          <div className="overflow-x-auto">
+            <table className={`${animationClasses.table} min-w-full`}>
               <thead>
                 <tr>
-                  <th className="px-2 py-1 bg-gray-100">item A</th>
-                  <th className="px-2 py-1 bg-gray-100">item B</th>
-                  <th className="px-2 py-1 bg-gray-100">count</th>
-                  <th className="px-2 py-1 bg-gray-100">support</th>
-                  <th className="px-2 py-1 bg-gray-100">A→B conf</th>
-                  <th className="px-2 py-1 bg-gray-100">B→A conf</th>
-                  <th className="px-2 py-1 bg-gray-100">A→B lift</th>
+                  <th className={animationClasses.th}>Item A</th>
+                  <th className={animationClasses.th}>Item B</th>
+                  <th className={animationClasses.th}>Count</th>
+                  <th className={animationClasses.th}>Support</th>
+                  <th className={animationClasses.th}>A→B Conf</th>
+                  <th className={animationClasses.th}>B→A Conf</th>
+                  <th className={animationClasses.th}>A→B Lift</th>
                 </tr>
               </thead>
               <tbody>
                 {topPairs.map((p, idx) => (
-                  <tr key={idx} className="border-t">
-                    <td className="px-2 py-1">{p.pair[0]}</td>
-                    <td className="px-2 py-1">{p.pair[1]}</td>
-                    <td className="px-2 py-1">{p.count}</td>
-                    <td className="px-2 py-1">{(p.support * 100).toFixed(2)}%</td>
-                    <td className="px-2 py-1">{(p.conf_a_b * 100).toFixed(2)}%</td>
-                    <td className="px-2 py-1">{(p.conf_b_a * 100).toFixed(2)}%</td>
-                    <td className="px-2 py-1">{p.lift_a_b.toFixed(2)}</td>
+                  <tr key={idx} className="hover:bg-purple-50/50 transition-colors">
+                    <td className={animationClasses.td}>
+                      <code className="bg-gray-50 px-2 py-1 rounded text-sm">
+                        {p.pair[0]}
+                      </code>
+                    </td>
+                    <td className={animationClasses.td}>
+                      <code className="bg-gray-50 px-2 py-1 rounded text-sm">
+                        {p.pair[1]}
+                      </code>
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-purple-600`}>
+                      {p.count}
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-purple-600`}>
+                      {(p.support * 100).toFixed(2)}%
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-indigo-600`}>
+                      {(p.conf_a_b * 100).toFixed(2)}%
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold text-indigo-600`}>
+                      {(p.conf_b_a * 100).toFixed(2)}%
+                    </td>
+                    <td className={`${animationClasses.td} font-semibold`}>
+                      {p.lift_a_b.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -277,14 +405,20 @@ const AssociationRules = ({ selectedDataset, isUserDataset }) => {
       )}
 
       {/* Network visualization */}
-      <div className="mt-6">
-        <h4 className="font-medium mb-2">Association Graph</h4>
-        <AssociationNetwork {...buildGraph()} />
+      <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+        <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+          Association Graph
+        </h4>
+        <div className={`${animationClasses.card} bg-white/90 rounded-lg overflow-hidden border border-purple-100`}>
+          <AssociationNetwork {...buildGraph()} />
+        </div>
       </div>
 
       {/* Summary if no itemsets/rules */}
       {summary && summary.n_itemsets === 0 && summary.n_rules === 0 && (
-        <div className="mt-3 text-sm text-gray-600">No multi-item frequent itemsets or rules found with the selected thresholds. Showing top single items instead.</div>
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+          No multi-item frequent itemsets or rules found with the selected thresholds. Showing top single items instead.
+        </div>
       )}
     </div>
   );

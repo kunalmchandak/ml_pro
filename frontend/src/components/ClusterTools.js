@@ -161,14 +161,26 @@ const ClusterTools = ({ selectedDataset, isUserDataset }) => {
     ]
   };
 
-  return (
-    <div className="bg-white p-4 rounded shadow mt-4">
-      <h3 className="text-lg font-semibold mb-2">Clustering Tools</h3>
+  const animationClasses = {
+    card: "transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-200/50",
+    button: "transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 shadow-lg hover:shadow-xl",
+    input: "transition-all duration-200 focus:ring-2 focus:ring-purple-400",
+  };
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
-        <div>
-          <label className="block text-sm">Algorithm</label>
-          <select value={algorithm} onChange={e => setAlgorithm(e.target.value)} className="w-full p-2 border rounded">
+  return (
+    <div className="bg-white/90 backdrop-blur-lg p-6 rounded-xl border-4 border-purple-400 hover:border-purple-600 transition-all duration-300 shadow-lg">
+      <h3 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+        Clustering Tools
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className={`${animationClasses.card} bg-white/80 p-4 rounded-xl border-2 border-purple-200`}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Algorithm</label>
+          <select 
+            value={algorithm} 
+            onChange={e => setAlgorithm(e.target.value)} 
+            className={`w-full p-3 border-2 border-purple-200 rounded-lg bg-white/80 ${animationClasses.input}`}
+          >
             <option value="kmeans">K-Means</option>
             <option value="agglomerative">Agglomerative</option>
             <option value="birch">Birch</option>
@@ -176,98 +188,147 @@ const ClusterTools = ({ selectedDataset, isUserDataset }) => {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm">Clusters (k)</label>
-          <input type="number" min={2} value={nClusters} onChange={e => setNClusters(e.target.value)} className="w-full p-2 border rounded" />
+        <div className={`${animationClasses.card} bg-white/80 p-4 rounded-xl border-2 border-purple-200`}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Clusters (k)</label>
+          <input 
+            type="number" 
+            min={2} 
+            value={nClusters} 
+            onChange={e => setNClusters(e.target.value)} 
+            className={`w-full p-3 border-2 border-purple-200 rounded-lg bg-white/80 ${animationClasses.input}`} 
+          />
         </div>
 
-        <div className="flex items-end">
-          <button onClick={() => fetchElbow(10)} className="bg-blue-600 text-white px-3 py-2 rounded mr-2">Compute Elbow</button>
-          <button onClick={runMetrics} className="bg-green-600 text-white px-3 py-2 rounded">Run Clustering</button>
+        <div className="flex items-end gap-3">
+          <button 
+            onClick={() => fetchElbow(10)} 
+            className={`${animationClasses.button} flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 
+              text-white font-bold py-3 px-4 rounded-lg`}
+          >
+            Compute Elbow
+          </button>
+          <button 
+            onClick={runMetrics} 
+            className={`${animationClasses.button} flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 
+              text-white font-bold py-3 px-4 rounded-lg`}
+          >
+            Run Clustering
+          </button>
         </div>
       </div>
 
-      {loading && <div className="text-sm text-blue-600">Processing...</div>}
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {loading && (
+        <div className="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 animate-pulse">
+          Processing...
+        </div>
+      )}
+      {error && (
+        <div className="text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+          {error}
+        </div>
+      )}
 
       {elbowData && elbowData.length > 0 && (
-        <div className="mt-3">
-          <h4 className="font-medium mb-2">Elbow Plot</h4>
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Elbow Plot
+          </h4>
           <Line data={chart} />
         </div>
       )}
 
       {metrics && (
-        <div className="mt-3">
-          <h4 className="font-medium mb-2">Cluster Metrics</h4>
-          <div className="space-y-1 text-sm">
-            <div><strong>Algorithm:</strong> {metrics.algorithm}</div>
-            <div><strong>n_clusters:</strong> {metrics.n_clusters}</div>
-            <div><strong>Samples:</strong> {metrics.n_samples}</div>
-            {modelStatus && (
-              <div className="mt-2">
-                <strong>Model Status: </strong>
-                <span className={`px-2 py-1 rounded ${modelStatus.className}`}>{modelStatus.label}</span>
-              </div>
-            )}
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+            Cluster Analysis
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Algorithm</div>
+              <div className="text-lg font-semibold">{metrics.algorithm}</div>
+            </div>
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Clusters</div>
+              <div className="text-lg font-semibold">{metrics.n_clusters}</div>
+            </div>
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+              <div className="text-sm text-gray-600 mb-1">Samples</div>
+              <div className="text-lg font-semibold">{metrics.n_samples}</div>
+            </div>
+          </div>
 
-            <div>
-              <strong>Metrics:</strong>
-              <ul className="list-disc pl-6">
-                {Object.entries(metrics.metrics).map(([k,v]) => (
-                  <li key={k}>{k}: {v === null ? 'n/a' : (typeof v === 'number' ? v.toFixed(3) : String(v))}</li>
-                ))}
-              </ul>
+          {modelStatus && (
+            <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100 mb-6`}>
+              <div className="text-sm text-gray-600 mb-1">Model Status</div>
+              <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${modelStatus.className}`}>
+                {modelStatus.label}
+              </div>
             </div>
-            <div className="mt-3">
-              <button
-                onClick={async () => {
-                  try {
-                    const resp = await axios.get('http://localhost:8000/download_model', { responseType: 'blob' });
-                    const url = window.URL.createObjectURL(new Blob([resp.data]));
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.setAttribute('download', `cluster_model_${metrics.algorithm}_${metrics.n_clusters}.joblib`);
-                    document.body.appendChild(link);
-                    link.click();
-                    link.parentNode.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                  } catch (e) {
-                    console.error('Download failed', e);
-                    setError(e?.response?.data?.detail || 'Model download failed');
-                  }
-                }}
-                className="bg-blue-600 text-white px-3 py-2 rounded"
-              >
-                Download Model
-              </button>
+          )}
+
+          <div className={`${animationClasses.card} bg-white/90 p-4 rounded-xl border border-purple-100`}>
+            <div className="text-sm text-gray-600 mb-3">Detailed Metrics</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Object.entries(metrics.metrics).map(([k,v]) => (
+                <div key={k} className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">{k}:</span>
+                  <span className="text-sm font-bold">
+                    {v === null ? 'n/a' : (typeof v === 'number' ? v.toFixed(3) : String(v))}
+                  </span>
+                </div>
+              ))}
             </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={async () => {
+                try {
+                  const resp = await axios.get('http://localhost:8000/download_model', { responseType: 'blob' });
+                  const url = window.URL.createObjectURL(new Blob([resp.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', `cluster_model_${metrics.algorithm}_${metrics.n_clusters}.joblib`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.parentNode.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+                } catch (e) {
+                  console.error('Download failed', e);
+                  setError(e?.response?.data?.detail || 'Model download failed');
+                }
+              }}
+              className={`${animationClasses.button} bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 
+                text-white font-bold py-3 px-6 rounded-lg`}
+            >
+              Download Model
+            </button>
           </div>
         </div>
       )}
 
       {clusterData && (
-        <div className="mt-4">
-          <h4 className="font-medium mb-2">
+        <div className={`${animationClasses.card} mt-8 bg-white/80 p-6 rounded-xl border-2 border-purple-200`}>
+          <h4 className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
             {selectedDataset === 'Mall_Customers.csv' ? 
               'Customer Segments (Income vs Spending)' : 
               'Cluster Visualization (PCA 2D)'}
           </h4>
-          <div className="h-64">
+          <div className="h-[400px]">
             <Scatter
               data={{
                 datasets: [
                   {
                     label: 'Customers',
                     data: clusterData.points || [],
-                    pointBackgroundColor: clusterData.colors || 'rgba(59,130,246,0.6)',
+                    pointBackgroundColor: clusterData.colors || 'rgba(147,51,234,0.6)', // purple-600
                     pointRadius: 4,
                     showLine: false
                   },
                   {
                     label: 'Centroids',
                     data: clusterData.centroids || [],
-                    pointBackgroundColor: 'rgba(255,99,132,0.9)',
+                    pointBackgroundColor: 'rgba(79,70,229,0.9)', // indigo-600
                     pointRadius: 9,
                     pointStyle: 'triangle',
                     showLine: false
@@ -281,23 +342,38 @@ const ClusterTools = ({ selectedDataset, isUserDataset }) => {
                   x: { 
                     title: { 
                       display: true, 
-                      text: selectedDataset === 'Mall_Customers.csv' ? 'Annual Income (k$)' : 'PC1'
+                      text: selectedDataset === 'Mall_Customers.csv' ? 'Annual Income (k$)' : 'PC1',
+                      font: { weight: 'bold' }
                     },
                     ticks: {
                       callback: function(value) {
                         return selectedDataset === 'Mall_Customers.csv' ? value + 'k$' : value;
                       }
+                    },
+                    grid: {
+                      color: 'rgba(107,114,128,0.1)' // gray-500 with low opacity
                     }
                   },
                   y: { 
                     title: { 
                       display: true, 
-                      text: selectedDataset === 'Mall_Customers.csv' ? 'Spending Score (1-100)' : 'PC2'
+                      text: selectedDataset === 'Mall_Customers.csv' ? 'Spending Score (1-100)' : 'PC2',
+                      font: { weight: 'bold' }
+                    },
+                    grid: {
+                      color: 'rgba(107,114,128,0.1)' // gray-500 with low opacity
                     }
                   }
                 },
                 plugins: {
                   tooltip: {
+                    backgroundColor: 'rgba(255,255,255,0.9)',
+                    titleColor: '#1F2937', // gray-800
+                    bodyColor: '#1F2937', // gray-800
+                    borderColor: '#E5E7EB', // gray-200
+                    borderWidth: 1,
+                    padding: 10,
+                    cornerRadius: 8,
                     callbacks: {
                       label: function(context) {
                         const dsLabel = context.dataset.label || '';
@@ -310,29 +386,18 @@ const ClusterTools = ({ selectedDataset, isUserDataset }) => {
                       }
                     }
                   },
-                  legend: { position: 'top' }
+                  legend: { 
+                    position: 'top',
+                    labels: {
+                      font: { weight: 'bold' }
+                    }
+                  }
                 }
               }}
             />
           </div>
         </div>
       )}
-
-      {/* Debug panel - shows last API payloads/responses/errors */}
-      <div className="mt-4 p-2 bg-gray-50 border rounded text-xs">
-        <h5 className="font-medium">Debug</h5>
-        <div className="max-h-40 overflow-auto">
-          <pre className="whitespace-pre-wrap">{JSON.stringify({
-            selectedDataset,
-            isUserDataset,
-            nClusters,
-            algorithm,
-            metricsAvailable: !!metrics,
-            clusterDataAvailable: !!clusterData,
-            lastDebug: debugLog.slice(-6)
-          }, null, 2)}</pre>
-        </div>
-      </div>
     </div>
   );
 };
