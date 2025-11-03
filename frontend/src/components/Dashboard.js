@@ -156,7 +156,7 @@ const Dashboard = () => {
             <h2 className="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">1. Choose a Category</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className={`${animationClasses.card} p-6 bg-white/80 rounded-xl border-2 border-purple-200 hover:border-purple-400`} onClick={() => { setCategory('supervised'); setSubcategory(''); }}>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">🧠 Supervised Learning</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Supervised Learning</h3>
                 <p className="text-sm text-gray-600 mb-4">Classification & Regression</p>
                 <div className="flex gap-3">
                   <button 
@@ -183,7 +183,7 @@ const Dashboard = () => {
               </div>
 
               <div className={`${animationClasses.card} p-6 bg-white/80 rounded-xl border-2 border-purple-200 hover:border-purple-400`}>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">🔎 Unsupervised Learning</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Unsupervised Learning</h3>
                 <p className="text-sm text-gray-600 mb-4">Clustering & Association</p>
                 <div className="flex gap-3">
                   <button 
